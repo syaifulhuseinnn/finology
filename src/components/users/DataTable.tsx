@@ -4,7 +4,6 @@ import {
 	getCoreRowModel,
 	useReactTable,
 } from "@tanstack/react-table"
-
 import {
 	Table,
 	TableBody,
@@ -14,16 +13,9 @@ import {
 	TableRow,
 } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
-import { Button } from "../ui/button"
-import { Filter } from "lucide-react"
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { useMemo, useState } from "react"
+import useDebounce from "@/hooks/useDebounce"
+import FilterDropdown from "./FilterDropdown"
 
 interface DataTableProps<TData, TValue> {
 	columns: ColumnDef<TData, TValue>[]
@@ -31,31 +23,59 @@ interface DataTableProps<TData, TValue> {
 }
 
 export default function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
+	const [searchQuery, setSearchQuery] = useState<string>("")
+	const [filterCity, setFilterCity] = useState("")
+	const [filterCompany, setFilterCompany] = useState("")
+
+	const debouncedQuery = useDebounce(searchQuery, 500)
+
+	const cities = Array.from(
+		new Set(data.map((user: any) => user.address.city))
+	).map((city) => ({ label: city, value: city }))
+
+	const companies = Array.from(
+		new Set(data.map((user: any) => user.company.name))
+	).map((company) => ({ label: company, value: company }))
+
+	const filteredData = useMemo(() => {
+		const q = debouncedQuery?.toString?.().trim().toLowerCase()
+		return (data as any[]).filter((user) => {
+			// Name search
+			if (q) {
+				const name = (user?.name ?? "").toString().toLowerCase()
+				if (!name.includes(q)) return false
+			}
+			// City filter
+			if (filterCity?.toString?.().trim()) {
+				if (user?.address?.city !== filterCity) return false
+			}
+			// Company filter
+			if (filterCompany?.toString?.().trim()) {
+				if (user?.company?.name !== filterCompany) return false
+			}
+			return true
+		})
+	}, [data, debouncedQuery, filterCity, filterCompany])
+
+
 	const table = useReactTable({
-		data,
+		data: filteredData,
 		columns,
 		getCoreRowModel: getCoreRowModel(),
 	})
 
-	const cities = Array.from(new Set(data.map((user: any) => user.address.city))).sort()
 
 	return (
 		<div>
-			<div className="flex w-full justify-between">
-				<Input placeholder="Search user" className="mb-4 w-full max-w-sm" />
-				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button>Filter <Filter /></Button>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent align="end">
-						<DropdownMenuLabel>My Account</DropdownMenuLabel>
-						<DropdownMenuSeparator />
-						<DropdownMenuItem>Profile</DropdownMenuItem>
-						<DropdownMenuItem>Billing</DropdownMenuItem>
-						<DropdownMenuItem>Team</DropdownMenuItem>
-						<DropdownMenuItem>Subscription</DropdownMenuItem>
-					</DropdownMenuContent>
-				</DropdownMenu>
+			<div className="flex w-full justify-between gap-4">
+				<Input
+					placeholder="Search by user name"
+					className="mb-4 w-full max-w-sm"
+					value={searchQuery}
+					onChange={(event) => setSearchQuery(event.target.value)}
+				/>
+
+				<FilterDropdown cities={cities} companies={companies} setFilterCity={setFilterCity} setFilterCompany={setFilterCompany} />
 			</div>
 			<div className="rounded-md border">
 				<Table>
@@ -64,7 +84,7 @@ export default function DataTable<TData, TValue>({ columns, data }: DataTablePro
 							<TableRow key={headerGroup.id}>
 								{headerGroup.headers.map((header) => {
 									return (
-										<TableHead key={header.id}>
+										<TableHead key={header.id} className="px-5">
 											{header.isPlaceholder
 												? null
 												: flexRender(
@@ -85,7 +105,7 @@ export default function DataTable<TData, TValue>({ columns, data }: DataTablePro
 									data-state={row.getIsSelected() && "selected"}
 								>
 									{row.getVisibleCells().map((cell) => (
-										<TableCell key={cell.id} className="text-left py-5">
+										<TableCell key={cell.id} className="text-left p-5">
 											{flexRender(
 												cell.column.columnDef.cell,
 												cell.getContext(),

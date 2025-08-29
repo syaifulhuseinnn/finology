@@ -3,7 +3,6 @@ import DataTable from '@/components/users/DataTable'
 import LoadingSpinner from '@/components/users/LoadingSpinner'
 import useFetchUsers from '@/hooks/useFetchUsers'
 
-
 export default function UserList() {
 	const { users, loading, error } = useFetchUsers()
 

@@ -1,7 +1,5 @@
 import type { User } from "@/types/user.interface";
 import { type ColumnDef } from "@tanstack/react-table";
-import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react"
 import Avatar from "./Avatar";
 
 export const columns: ColumnDef<User>[] = [
@@ -23,6 +21,7 @@ export const columns: ColumnDef<User>[] = [
 	{
 		accessorKey: "city",
 		header: "City",
+		enableColumnFilter: true,
 		cell: ({ row: { original: { address } } }) => address.city,
 	},
 	{
@@ -39,12 +38,6 @@ export const columns: ColumnDef<User>[] = [
 		accessorKey: "website",
 		header: "Website",
 		cell: ({ row: { original: { website } } }) => <a href="#" className="text-blue-500">{website}</a>,
-	},
-	{
-		id: "actions",
-		header: "",
-		cell: () => <Button variant="ghost" className="text-indigo-500 hover:text-indigo-600 hover:cursor-pointer">
-			View <ArrowRight />
-		</Button>,
 	}
 ]
+
